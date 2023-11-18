@@ -1,0 +1,6 @@
+requests
+python-dotenv
+feedparser
+functions-framework==3.*
+google-cloud
+google-cloud-pubsub
