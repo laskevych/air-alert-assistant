@@ -12,7 +12,28 @@ import time
 dotenv.load_dotenv()
 
 
-def air_alarm_exist(region_id):
+def air_alarm_exist(region_id: str) -> bool:
+    """
+    Checks if an air alarm exists in the specified region using an external API.
+
+    Args:
+        region_id (str): The identifier of the region to check for air alarms.
+
+    Returns:
+        bool: True if an active air alarm is present; False otherwise.
+
+    Raises:
+        requests.exceptions.RequestException: If an error occurs during the API request.
+
+    Usage:
+        This function queries an external API to check if there are active air alarms in the specified region.
+        It uses the 'ALARM_API_KEY' from environment variables for authorization.
+
+        Example:
+        >>> region_id = '123'
+        >>> air_alarm_exist(region_id)
+        True
+        """
     headers = {
         "Authorization": os.getenv("ALARM_API_KEY"),
         "Accept": "application/json"
@@ -35,33 +56,25 @@ def air_alarm_exist(region_id):
         print("Error executing the request: {}".format(e))
 
 
-def generate_notification_event():
-    # {'status': 'DEACTIVATE', 'regionId': 12, 'alarmType': 'AIR', 'createdAt': '2023-11-18T09:04:05Z'}
+def get_datetime_diff_in_minutes(string_datetime: str) -> float:
+    """
+    Calculates the time difference in minutes between the provided string datetime and the current UTC time.
 
-    credentials = "{}:{}".format(os.getenv("ESPUTNIK_SERVICE_USERNAME"), os.getenv("ESPUTNIK_SERVICE_PASSWORD"))
-    base64_credentials = base64.b64encode(credentials.encode()).decode()
+    Args:
+        string_datetime (str): A string representing the datetime in the format "%a, %d %b %Y %H:%M:%S %z".
 
-    payload = {
-        "eventTypeKey": os.getenv("ESPUTNIK_EVENT_TYPE_KEY"),
-        "keyValue": os.getenv("ESPUTNIK_MAIN_USER_ID")
-    }
+    Returns:
+        float: The time difference in minutes.
 
-    headers = {
-        "accept": "application/json; charset=UTF-8",
-        "content-type": "application/json",
-        "authorization": "Basic {}".format(base64_credentials)
-    }
+    Usage:
+        This function calculates the time difference between the provided datetime string and the current UTC time.
+        The datetime string should be in the format "%a, %d %b %Y %H:%M:%S %z".
 
-    try:
-        response = requests.post(os.getenv("ESPUTNIK_EVENT_API_ENDPOINT"), json=payload, headers=headers)
-
-        response.raise_for_status()
-
-    except requests.exceptions.RequestException as e:
-        print("Error executing the request: {}".format(e))
-
-
-def get_datetime_diff_in_minutes(string_datetime):
+        Example:
+        >>> datetime_difference = get_datetime_diff_in_minutes("Fri, 17 Nov 2023 17:45:42 +0000")
+        >>> print(datetime_difference)
+        120.5
+    """
     passed_datetime = datetime.strptime(string_datetime, "%a, %d %b %Y %H:%M:%S %z") + timedelta(hours=2)
 
     current_datetime = datetime.now(timezone.utc) + timedelta(hours=2)
@@ -69,7 +82,26 @@ def get_datetime_diff_in_minutes(string_datetime):
     return (current_datetime - passed_datetime).total_seconds() / 60
 
 
-def message_exist_in_rss():
+def message_exist_in_rss() -> bool:
+    """
+    Checks if there is a message in the specified RSS feed containing keywords within a certain time difference.
+
+    Returns:
+        bool: True if a matching message is found; otherwise, False.
+
+    Raises:
+        Exception: If data for `ALERT_CHANNEL_RSS_KEYWORDS` or `ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN`
+                   is not found in `.env` or `ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN` is less than or equal to 3.
+
+    Usage:
+        This function checks if there is a message in the specified RSS feed containing keywords defined in
+        `ALERT_CHANNEL_RSS_KEYWORDS` within the time difference specified by `ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN`.
+
+        Example:
+        >>> result = message_exist_in_rss()
+        >>> print(result)
+        True
+    """
     keywords = [value.strip().lower() for value in os.getenv("ALERT_CHANNEL_RSS_KEYWORDS").split(',') if value.strip()]
     published_diff_in_minutes = int(os.getenv("ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN"))
 
@@ -96,7 +128,86 @@ def message_exist_in_rss():
     return message_exist
 
 
+def generate_notification_event():
+    """
+    Generates a notification event in eSputnik using the provided credentials and parameters.
+
+    Returns:
+        None
+
+    Raises:
+        requests.exceptions.RequestException: If an error occurs during the API request.
+
+    Usage:
+        This function sends a POST request to the eSputnik Event API to generate a notification event.
+        It uses the 'ESPUTNIK_SERVICE_USERNAME', 'ESPUTNIK_SERVICE_PASSWORD', 'ESPUTNIK_EVENT_TYPE_KEY',
+        and 'ESPUTNIK_MAIN_USER_ID' from environment variables.
+
+        Example:
+        >>> generate_notification_event()
+        """
+    credentials = "{}:{}".format(os.getenv("ESPUTNIK_SERVICE_USERNAME"), os.getenv("ESPUTNIK_SERVICE_PASSWORD"))
+    base64_credentials = base64.b64encode(credentials.encode()).decode()
+
+    payload = {
+        "eventTypeKey": os.getenv("ESPUTNIK_EVENT_TYPE_KEY"),
+        "keyValue": os.getenv("ESPUTNIK_MAIN_USER_ID")
+    }
+
+    headers = {
+        "accept": "application/json; charset=UTF-8",
+        "content-type": "application/json",
+        "authorization": "Basic {}".format(base64_credentials)
+    }
+
+    try:
+        response = requests.post(os.getenv("ESPUTNIK_EVENT_API_ENDPOINT"), json=payload, headers=headers)
+
+        response.raise_for_status()
+
+    except requests.exceptions.RequestException as e:
+        print("Error executing the request: {}".format(e))
+
+
+def wait():
+    """
+    Pauses the execution of the script for a specified duration.
+
+    Returns:
+        None
+
+    Raises:
+        Exception: If the timeout is less than 180 seconds.
+
+    Usage:
+        This function is used to introduce a delay in the script execution, allowing time for Cloud Functions to stabilize.
+        The duration of the pause is determined by the value of `GCP_CF_TIMEOUT_SEC` from the `.env` file.
+
+        Example:
+        >>> wait()
+    """
+    timeout = int(os.getenv("GCP_CF_TIMEOUT_SEC"))
+    if timeout < 180:
+        raise Exception("Invalid timeout! There will be an increase in Cloud Function instances.")
+
+    print("Wait {} seconds. After that publish next event to Pub/Sub.".format(timeout))
+    time.sleep(timeout)
+
+
 def produce_message_to_pub_sub():
+    """
+    Publishes a message to a Google Cloud Pub/Sub topic.
+
+    The function uses the values of 'GCP_PROJECT_ID' and 'GCP_TOPIC_ID' from the environment variables
+    to determine the project ID and topic ID for publishing the message.
+
+    Raises:
+        Exception: If 'GCP_PROJECT_ID' or 'GCP_TOPIC_ID' is missing in the environment variables.
+
+    Usage:
+        >>> produce_message_to_pub_sub()
+        Message published.
+    """
     publisher = pubsub_v1.PublisherClient()
     project_id = os.getenv("GCP_PROJECT_ID")
     topic_id = os.getenv("GCP_TOPIC_ID")
@@ -118,16 +229,22 @@ def produce_message_to_pub_sub():
     print("Message published.")
 
 
-def wait():
-    timeout = int(os.getenv("GCP_CF_TIMEOUT_SEC"))
-    if timeout < 180:
-        raise Exception("Invalid timeout! There will be an increase in Cloud Function instances.")
-
-    print("Wait {} seconds. After that publish next event to Pub/Sub.".format(timeout))
-    time.sleep(timeout)
-
-
 def main():
+    """
+    The main function orchestrating the workflow for air alarm notifications.
+
+    Returns:
+        None
+
+    Usage: This function checks if an air alarm exists in the specified region using the `air_alarm_exist` function.
+    If an air alarm is detected, it checks for relevant messages in the RSS feed using the `message_exist_in_rss`
+    function. If a relevant message is found, it generates a notification event using the
+    `generate_notification_event` function. If no relevant message is found, it introduces a delay using the `wait`
+    function and then publishes the next event to Pub/Sub using the `produce_message_to_pub_sub` function.
+
+        Example:
+        >>> main()
+    """
     region_id = os.getenv("ALARM_API_REGION_ID")
     if not air_alarm_exist(os.getenv("ALARM_API_REGION_ID")):
         print("Air alarm is not exists in region `{}`".format(region_id))
@@ -138,3 +255,30 @@ def main():
     else:
         wait()
         produce_message_to_pub_sub()
+
+# Triggered from a message on a Cloud Pub/Sub topic.
+@functions_framework.cloud_event
+def pubsub(cloud_event):
+    """
+    Cloud Function triggered by Pub/Sub messages.
+
+    Args:
+        cloud_event (functions.CloudEvent): CloudEvent representing the Pub/Sub message.
+
+    Returns:
+        None
+
+    Usage: This function is triggered by Pub/Sub messages. It decodes the message data and prints it to prove
+    successful execution. It then calls the `main` function, which orchestrates the workflow for air alarm
+    notifications.
+
+        Example:
+        >>> pubsub(cloud_event)
+
+    Note:
+        Ensure that the `main` function is correctly implemented and contains the necessary logic for your use case.
+    """
+    # Print out the data from Pub/Sub, to prove that it worked
+    print(base64.b64decode(cloud_event.data["message"]["data"]))
+
+    main()
