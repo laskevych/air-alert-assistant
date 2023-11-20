@@ -11,5 +11,7 @@
 Якщо повідомлень у RSS-каналі немає, то функція `air-alert-assistant-rss-watcher` зачекає 5 хвилин та згенерує івент у Google Pub/Sub, який запустить функцію `air-alert-assistant-rss-watcher` (циклічний запуск). Якщо у важливому регіоні повітряна тривога буде припинена, то функція `air-alert-assistant-rss-watcher` буде зупинена.
 
 ## Схема
-![Schema](schema.png)
+![Schema](docs/schema.png)
 
+## Автоматизація у додатку [Shortcuts](https://apps.apple.com/us/app/shortcuts/id915249334) від Apple
+![Schema](docs/shortcuts.png)
