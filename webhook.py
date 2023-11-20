@@ -31,7 +31,7 @@ def check_region_for_alarm(data: dict) -> bool:
         >>> check_region_for_alarm(data)
         True
     """
-    valuable_region_id = os.getenv('ALARM_API_REGION_ID')
+    valuable_region_id = int(os.getenv('ALARM_API_REGION_ID'))
     status = data.get('status')
     region_id = data.get('regionId')
 
@@ -101,7 +101,7 @@ def http(request):
         if request.method == "POST":
             request_json = request.get_json(silent=True)
             if check_region_for_alarm(request_json) is True:
-                print("[IMPORTANT] Air alert in region.")
+                print("[IMPORTANT] Air alert! Tracked region. Details: {}".format(request_json))
                 produce_message_to_pub_sub()
             else:
                 print("[OTHER] Air alert! Details: {}".format(request_json))
