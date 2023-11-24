@@ -117,12 +117,12 @@ def message_exist_in_rss() -> bool:
     message_exist = False
     for entry in feed.get('entries'):
         title = entry.get('title')
-        details = entry.get('title_detail').get('value')
+        details = entry.get('summary_detail').get('value')
         published = entry.get('published')
 
         found_keywords = [keyword for keyword in keywords if keyword in title.lower() or keyword in details.lower()]
         if found_keywords and get_datetime_diff_in_minutes(published) <= published_diff_in_minutes:
-            print(title)
+            print(title, details)
             message_exist = True
 
     return message_exist
