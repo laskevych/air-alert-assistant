@@ -279,6 +279,8 @@ def pubsub(cloud_event):
         Ensure that the `main` function is correctly implemented and contains the necessary logic for your use case.
     """
     # Print out the data from Pub/Sub, to prove that it worked
-    print(base64.b64decode(cloud_event.data["message"]["data"]))
+    #print(base64.b64decode(cloud_event.data["message"]["data"]))
 
     main()
+
+    return "Function execution completed."
