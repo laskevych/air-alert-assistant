@@ -33,7 +33,7 @@ def check_region_for_alarm(data: dict) -> bool:
     """
     valuable_region_id = int(os.getenv('ALARM_API_REGION_ID'))
     status = data.get('status')
-    region_id = data.get('regionId')
+    region_id = int(data.get('regionId'))
 
     if not valuable_region_id:
         raise Exception("Not found `ALARM_API_REGION_ID` in `.env`.")

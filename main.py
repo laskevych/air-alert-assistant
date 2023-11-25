@@ -252,6 +252,8 @@ def main():
 
     if message_exist_in_rss():
         generate_notification_event()
+        wait()
+        produce_message_to_pub_sub()
     else:
         wait()
         produce_message_to_pub_sub()
