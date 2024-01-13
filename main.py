@@ -75,7 +75,7 @@ def get_datetime_diff_in_minutes(string_datetime: str) -> float:
         >>> print(datetime_difference)
         120.5
     """
-    passed_datetime = datetime.strptime(string_datetime, "%a, %d %b %Y %H:%M:%S %z") + timedelta(hours=2)
+    passed_datetime = datetime.strptime(string_datetime, "%a, %d %b %Y %H:%M:%S %z")  # + timedelta(hours=2)
 
     current_datetime = datetime.now(timezone.utc) + timedelta(hours=2)
 
@@ -258,6 +258,7 @@ def main():
         wait()
         produce_message_to_pub_sub()
 
+
 # Triggered from a message on a Cloud Pub/Sub topic.
 @functions_framework.cloud_event
 def pubsub(cloud_event):
@@ -281,7 +282,7 @@ def pubsub(cloud_event):
         Ensure that the `main` function is correctly implemented and contains the necessary logic for your use case.
     """
     # Print out the data from Pub/Sub, to prove that it worked
-    #print(base64.b64decode(cloud_event.data["message"]["data"]))
+    # print(base64.b64decode(cloud_event.data["message"]["data"]))
 
     main()
 
