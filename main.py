@@ -56,7 +56,7 @@ def air_alarm_exist(region_id: str) -> bool:
         print("Error executing the request: {}".format(e))
 
 
-def get_datetime_diff_in_minutes(string_datetime: str) -> float:
+def get_datetime_diff_in_seconds(string_datetime: str) -> float:
     """
     Calculates the time difference in minutes between the provided string datetime and the current UTC time.
 
@@ -71,7 +71,7 @@ def get_datetime_diff_in_minutes(string_datetime: str) -> float:
         The datetime string should be in the format "%a, %d %b %Y %H:%M:%S %z".
 
         Example:
-        >>> datetime_difference = get_datetime_diff_in_minutes("Fri, 17 Nov 2023 17:45:42 +0000")
+        >>> datetime_difference = get_datetime_diff_in_seconds("Fri, 17 Nov 2023 17:45:42 +0000")
         >>> print(datetime_difference)
         120.5
     """
@@ -79,7 +79,7 @@ def get_datetime_diff_in_minutes(string_datetime: str) -> float:
 
     current_datetime = datetime.now(timezone.utc) + timedelta(hours=2)
 
-    return (current_datetime - passed_datetime).total_seconds() / 60
+    return (current_datetime - passed_datetime).total_seconds()
 
 
 def message_exist_in_rss() -> bool:
@@ -103,14 +103,14 @@ def message_exist_in_rss() -> bool:
         True
     """
     keywords = [value.strip().lower() for value in os.getenv("ALERT_CHANNEL_RSS_KEYWORDS").split(',') if value.strip()]
-    published_diff_in_minutes = int(os.getenv("ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN"))
+    published_diff_in_seconds = int(os.getenv("ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_SEC"))
 
     if not keywords:
         raise Exception("Data of `ALERT_CHANNEL_RSS_KEYWORDS` not found in `.env`.")
 
-    if not published_diff_in_minutes or published_diff_in_minutes <= 3:
+    if not published_diff_in_seconds or published_diff_in_seconds <= 30:
         raise Exception("Data of `ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN` not found in `.env` or "
-                        "`ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_MIN` <= 3.")
+                        "`ALERT_CHANNEL_RSS_PUBLISHED_DIFF_IN_SEC` <= 30.")
 
     feed = feedparser.parse(os.getenv("ALERT_CHANNEL_RSS"))
 
@@ -121,7 +121,7 @@ def message_exist_in_rss() -> bool:
         published = entry.get('published')
 
         found_keywords = [keyword for keyword in keywords if keyword in title.lower() or keyword in details.lower()]
-        if found_keywords and get_datetime_diff_in_minutes(published) <= published_diff_in_minutes:
+        if found_keywords and get_datetime_diff_in_seconds(published) <= published_diff_in_seconds:
             print(title, details)
             message_exist = True
 
